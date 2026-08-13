@@ -1557,10 +1557,12 @@
             renderBarChart('chart-yoy-amount', yearStats.map(s => s.label), yearStats.map(s => s.amount), '#BD7B22', true);
             renderBarChart('chart-yoy-count', yearStats.map(s => s.label), yearStats.map(s => s.count), '#0E7C71', false);
 
-            // 월별 표: 작년 1~12월, 올해 1월~이번달
+            // 월별 표: 이번달 포함 최근 12개월 (오래된 달 → 최신 달 순)
             const rows = [];
-            for (let m = 1; m <= 12; m++) rows.push(buildMonthlyRow(lastYear, m, allCompleted));
-            for (let m = 1; m <= now.getMonth() + 1; m++) rows.push(buildMonthlyRow(thisYear, m, allCompleted));
+            for (let i = 11; i >= 0; i--) {
+                const dt = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                rows.push(buildMonthlyRow(dt.getFullYear(), dt.getMonth() + 1, allCompleted));
+            }
 
             document.getElementById('stats-monthly-tbody').innerHTML = rows.map(r => `
                 <tr class="hover:bg-slate-50 border-b border-gray-100 transition">
