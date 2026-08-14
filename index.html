@@ -2093,12 +2093,17 @@
                 contentLink: document.getElementById('form-content-link').value.trim()
             };
 
+            // 거래완료 건에 콘텐츠 링크를 입력해서 저장하면, 콘텐츠 상태를 자동으로 "배포완료"로 변경
+            const autoSetContentDeployed = payload.status === "거래완료" && payload.contentLink !== "";
+            if (autoSetContentDeployed) payload.contentStatus = "배포완료";
+
             if(index === "") { masterData.unshift(payload); logActivity("신규 등록", `${payload.code} (${payload.name})`); }
             else { masterData[index] = payload; logActivity("정보 수정", `${payload.code} (${payload.name})`); }
 
             saveToStorage();
             // 신규 등록은 행 전체가 필요하지만, 기존 건 수정은 이 모달이 다루는 필드만 서버로 보냄.
-            // (상태/납품일자/콘텐츠상태처럼 이 모달과 무관한 필드는 보내지 않아야, 그 사이 다른 사람이 바꿔둔 값을 되돌리지 않음)
+            // (상태/납품일자/콘텐츠상태처럼 이 모달과 무관한 필드는 보내지 않아야, 그 사이 다른 사람이 바꿔둔 값을 되돌리지 않음.
+            //  다만 위에서 콘텐츠 상태를 자동으로 바꾼 경우에는 그 값도 함께 반영함)
             const serverPayload = index === "" ? payload : {
                 no: payload.no,
                 code: payload.code,
@@ -2108,7 +2113,8 @@
                 qty: payload.qty,
                 price: payload.price,
                 estimateImg: payload.estimateImg,
-                contentLink: payload.contentLink
+                contentLink: payload.contentLink,
+                ...(autoSetContentDeployed ? { contentStatus: "배포완료" } : {})
             };
             apiPost("upsertRow", { item: serverPayload });
             closeCrudModal();
