@@ -2116,7 +2116,18 @@
                 contentLink: payload.contentLink,
                 ...(autoSetContentDeployed ? { contentStatus: "배포완료" } : {})
             };
-            apiPost("upsertRow", { item: serverPayload });
+            submitBtn.disabled = true;
+            submitBtn.innerText = "저장 중...";
+            const upsertRes = await apiPost("upsertRow", { item: serverPayload });
+            submitBtn.disabled = false;
+            submitBtn.innerText = "저장하기";
+
+            if (!upsertRes || upsertRes.error) {
+                const reason = upsertRes && upsertRes.error ? upsertRes.error : "네트워크 오류로 서버 응답을 받지 못했습니다";
+                alert(`저장 내용이 서버(구글시트)에 반영되지 못했습니다.\n사유: ${reason}\n\n창을 닫지 말고, 네트워크 상태를 확인한 뒤 다시 저장을 시도해 주세요.`);
+                return; // 모달을 닫지 않고 그대로 유지 (재시도할 수 있도록)
+            }
+
             closeCrudModal();
             calculateWorkflowStats();
             if(!document.getElementById('page-management').classList.contains('hidden')) renderManagementTable();
