@@ -358,7 +358,7 @@
                             <div class="font-display text-3xl font-bold mt-2" id="archive-total-price" style="color: var(--accent);">₩0</div>
                         </div>
                         <div class="card p-6">
-                            <div class="text-sm font-medium" style="color:var(--text-muted);">총 확정 건수</div>
+                            <div class="text-sm font-medium" style="color:var(--text-muted);">총 거래건수</div>
                             <div class="font-display text-2xl font-bold mt-2" id="archive-total-count" style="color:var(--text);">0 건</div>
                         </div>
                         <div class="card p-6">
@@ -504,29 +504,33 @@
                 <main id="page-stats" class="p-8 space-y-6 page-section hidden">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="p-6 rounded-2xl text-white" style="background: linear-gradient(135deg, var(--ink), var(--ink-soft));">
-                            <div class="text-sm font-medium" style="color:#9AA1B8;">총 완료 거래금액 (전체)</div>
+                            <div class="text-sm font-medium" style="color:#9AA1B8;">이번달 총 완료 거래금액</div>
                             <div class="font-display text-3xl font-bold mt-2" id="stats-total-amount" style="color: var(--accent);">₩0</div>
                         </div>
                         <div class="card p-6">
-                            <div class="text-sm font-medium" style="color:var(--text-muted);">총 확정 건수 (전체)</div>
+                            <div class="text-sm font-medium" style="color:var(--text-muted);">이번달 거래건수</div>
                             <div class="font-display text-2xl font-bold mt-2" id="stats-total-count" style="color:var(--text);">0 건</div>
                         </div>
                         <div class="card p-6">
-                            <div class="text-sm font-medium" style="color:var(--text-muted);">총 수수료 매출 (4%, VAT 미포함)</div>
+                            <div class="text-sm font-medium" style="color:var(--text-muted);">이번달 수수료 매출 (4%, VAT 미포함)</div>
                             <div class="font-display text-2xl font-bold mt-2" id="stats-total-commission" style="color:var(--teal);">₩0</div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div class="card p-5 space-y-4">
-                            <div class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-muted);">최근 3개월 추이</div>
+                            <div class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-muted);">최근 6개월 추이 (문의일자 기준)</div>
                             <div>
-                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">총 완료 거래금액</div>
-                                <div style="height:160px;"><canvas id="chart-recent-amount"></canvas></div>
+                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">상담건수</div>
+                                <div style="height:130px;"><canvas id="chart-recent-inquiry"></canvas></div>
                             </div>
                             <div>
-                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">총 확정 건수</div>
-                                <div style="height:160px;"><canvas id="chart-recent-count"></canvas></div>
+                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">거래건수</div>
+                                <div style="height:130px;"><canvas id="chart-recent-count"></canvas></div>
+                            </div>
+                            <div>
+                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">거래전환율</div>
+                                <div style="height:130px;"><canvas id="chart-recent-conversion"></canvas></div>
                             </div>
                         </div>
                         <div class="card p-5 space-y-4">
@@ -536,7 +540,7 @@
                                 <div style="height:160px;"><canvas id="chart-yoy-amount"></canvas></div>
                             </div>
                             <div>
-                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">총 확정 건수</div>
+                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">거래건수</div>
                                 <div style="height:160px;"><canvas id="chart-yoy-count"></canvas></div>
                             </div>
                         </div>
@@ -549,7 +553,7 @@
                                     <th style="width: 90px;">연도</th>
                                     <th style="width: 90px;">월</th>
                                     <th>총 완료 거래금액</th>
-                                    <th>총 확정 건수</th>
+                                    <th>거래건수</th>
                                     <th>총 납품 PC 수량</th>
                                     <th>수수료(VAT 별도)</th>
                                 </tr>
@@ -1182,11 +1186,12 @@
             return "MANAGEMENT";
         }
 
-        // 미진행 내역 보관 기간: 문의일자 기준 최근 6개월. 그 이상 지난 미진행 건은 자동 삭제(상담 내역+견적서 파일 모두).
+        // 미진행 내역 보관 기간: 문의일자 기준 최근 7개월. 그 이상 지난 미진행 건은 자동 삭제(상담 내역+견적서 파일 모두).
+        // (7개월로 둔 이유: 통계자료 페이지의 "최근 6개월" 집계가 삭제로 인해 계속 바뀌는 걸 막기 위해, 삭제 주기를 통계 조회기간보다 1개월 여유 있게 둠)
         // (거래완료 건은 getItemCategory에서 항상 COMPLETED로 분류되므로 이 삭제 대상에 포함되지 않음)
         function pruneExpiredUnprocessed() {
             const cutoff = new Date(CURRENT_SYSTEM_DATE);
-            cutoff.setMonth(cutoff.getMonth() - 6);
+            cutoff.setMonth(cutoff.getMonth() - 7);
 
             const before = masterData.length;
             const removed = [];
@@ -1198,7 +1203,7 @@
             });
 
             if (masterData.length !== before) {
-                logActivity("자동 삭제", `문의일자 6개월 경과로 미진행 건 ${before - masterData.length}건 자동 삭제(견적서 파일 포함)`);
+                logActivity("자동 삭제", `문의일자 7개월 경과로 미진행 건 ${before - masterData.length}건 자동 삭제(견적서 파일 포함)`);
                 saveToStorage();
                 // deleteRow는 서버에서 해당 건에 첨부된 견적서 드라이브 파일도 함께 휴지통으로 이동시킴
                 removed.forEach(item => apiPost("deleteRow", { code: item.code }));
@@ -1532,29 +1537,27 @@
         let chartInstances = {};
 
         function renderStatsPage() {
-            const allCompleted = masterData.filter(item => item.status === '거래완료');
-            const totalAmount = allCompleted.reduce((sum, i) => sum + (Number(i.price) || 0), 0);
-            const totalCount = allCompleted.length;
-            const totalCommission = totalAmount * 0.04; // VAT 미포함
-
-            document.getElementById('stats-total-amount').innerText = `₩${totalAmount.toLocaleString()}`;
-            document.getElementById('stats-total-count').innerText = `${totalCount} 건`;
-            document.getElementById('stats-total-commission').innerText = `₩${Math.round(totalCommission).toLocaleString()}`;
-
             const now = CURRENT_SYSTEM_DATE;
+            const allCompleted = masterData.filter(item => item.status === '거래완료');
 
-            // 최근 3개월
+            // 상단: 이번달 통계 (납품일자(거래완료) 기준)
+            const thisMonthRow = buildMonthlyRow(now.getFullYear(), now.getMonth() + 1, allCompleted);
+            document.getElementById('stats-total-amount').innerText = `₩${thisMonthRow.amount.toLocaleString()}`;
+            document.getElementById('stats-total-count').innerText = `${thisMonthRow.count} 건`;
+            document.getElementById('stats-total-commission').innerText = `₩${Math.round(thisMonthRow.commission).toLocaleString()}`;
+
+            // 최근 6개월 (문의일자 기준): 상담건수 / 거래건수 / 거래전환율
             const recentMonths = [];
-            for (let i = 2; i >= 0; i--) {
+            for (let i = 5; i >= 0; i--) {
                 const dt = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 recentMonths.push({ year: dt.getFullYear(), month: dt.getMonth() + 1 });
             }
             const recentStats = recentMonths.map(({ year, month }) => {
-                const r = buildMonthlyRow(year, month, allCompleted);
-                return { label: `${year}.${String(month).padStart(2, '0')}`, amount: r.amount, count: r.count };
+                const s = buildInquiryMonthlyStats(year, month);
+                return { label: `${year}.${String(month).padStart(2, '0')}`, ...s };
             });
 
-            // 전년도 대비 올해
+            // 전년도 대비 올해 (납품일자(거래완료) 기준)
             const thisYear = now.getFullYear();
             const lastYear = thisYear - 1;
             const yearStats = [lastYear, thisYear].map(year => {
@@ -1566,12 +1569,14 @@
                 };
             });
 
-            renderBarChart('chart-recent-amount', recentStats.map(s => s.label), recentStats.map(s => s.amount), '#BD7B22', true);
-            renderBarChart('chart-recent-count', recentStats.map(s => s.label), recentStats.map(s => s.count), '#0E7C71', false);
-            renderBarChart('chart-yoy-amount', yearStats.map(s => s.label), yearStats.map(s => s.amount), '#BD7B22', true);
-            renderBarChart('chart-yoy-count', yearStats.map(s => s.label), yearStats.map(s => s.count), '#0E7C71', false);
+            renderBarChart('chart-recent-inquiry', recentStats.map(s => s.label), recentStats.map(s => s.inquiryCount), '#3E5C9A', 'count');
+            renderBarChart('chart-recent-count', recentStats.map(s => s.label), recentStats.map(s => s.dealCount), '#0E7C71', 'count');
+            renderBarChart('chart-recent-conversion', recentStats.map(s => s.label), recentStats.map(s => Math.round(s.conversionRate * 10) / 10), '#BD7B22', 'percent');
 
-            // 월별 표: 이번달 포함 최근 12개월 (오래된 달 → 최신 달 순)
+            renderBarChart('chart-yoy-amount', yearStats.map(s => s.label), yearStats.map(s => s.amount), '#BD7B22', 'currency');
+            renderBarChart('chart-yoy-count', yearStats.map(s => s.label), yearStats.map(s => s.count), '#0E7C71', 'count');
+
+            // 월별 표: 이번달 포함 최근 12개월 (오래된 달 → 최신 달 순, 납품일자(거래완료) 기준)
             const rows = [];
             for (let i = 11; i >= 0; i--) {
                 const dt = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -1590,6 +1595,7 @@
             `).join('');
         }
 
+        // 납품일자(거래완료) 기준 월별 집계: 거래금액/거래건수/납품PC수량/수수료
         function buildMonthlyRow(year, month, allCompleted) {
             const items = allCompleted.filter(i => {
                 if (!i.deliveryDate) return false;
@@ -1601,10 +1607,30 @@
             return { year, month, amount, count: items.length, qty, commission: amount * 0.04 }; // 수수료(VAT 별도)
         }
 
-        function renderBarChart(canvasId, labels, data, color, isCurrency) {
+        // 문의일자 기준 월별 집계: 상담건수 / 거래건수(그 중 거래완료된 건) / 거래전환율
+        function buildInquiryMonthlyStats(year, month) {
+            const items = masterData.filter(i => {
+                if (!i.date) return false;
+                const d = new Date(i.date);
+                return d.getFullYear() === year && (d.getMonth() + 1) === month;
+            });
+            const inquiryCount = items.length;
+            const dealCount = items.filter(i => i.status === '거래완료').length;
+            const conversionRate = inquiryCount > 0 ? (dealCount / inquiryCount) * 100 : 0;
+            return { inquiryCount, dealCount, conversionRate };
+        }
+
+        function renderBarChart(canvasId, labels, data, color, format) {
             const ctx = document.getElementById(canvasId);
             if (!ctx || typeof Chart === 'undefined') return;
             if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+            const formatValue = (v) => {
+                if (format === 'currency') return `₩${Number(v).toLocaleString()}`;
+                if (format === 'percent') return `${v}%`;
+                return `${v}건`;
+            };
+
             chartInstances[canvasId] = new Chart(ctx, {
                 type: 'bar',
                 data: { labels, datasets: [{ data, backgroundColor: color, borderRadius: 6, maxBarThickness: 56 }] },
@@ -1613,10 +1639,15 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
-                        tooltip: { callbacks: { label: (c) => isCurrency ? `₩${c.parsed.y.toLocaleString()}` : `${c.parsed.y}건` } }
+                        tooltip: { callbacks: { label: (c) => formatValue(c.parsed.y) } }
                     },
                     scales: {
-                        y: { beginAtZero: true, ticks: { callback: (v) => isCurrency ? v.toLocaleString() : v } },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: (v) => format === 'currency' ? Number(v).toLocaleString() : (format === 'percent' ? v + '%' : v) },
+                            // 세로축 폭을 고정해서, 같은 카드 안 여러 차트의 그래프 시작 위치(플롯 영역)를 서로 맞춤
+                            afterFit: (axis) => { axis.width = 64; }
+                        },
                         x: { grid: { display: false } }
                     }
                 }
