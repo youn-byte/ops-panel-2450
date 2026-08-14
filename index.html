@@ -354,7 +354,7 @@
                 <main id="page-completed" class="p-8 space-y-6 page-section hidden">
                     <div class="p-4 rounded-xl flex items-center gap-4" style="background: var(--accent-soft); border: 1px solid #EAD9BC; color:#6B4A15;">
                         <i class="fa-solid fa-circle-info text-xl" style="color:#B98A3E;"></i>
-                        <p class="text-xs">납품일자(거래완료) 기준 <strong>6개월이 경과한 건은 첨부된 견적서 파일만 자동 삭제</strong>됩니다. 상담 내역(건 자체)은 계속 유지됩니다.</p>
+                        <p class="text-xs">납품일자(거래완료) 기준 <strong>7개월 경과 시 첨부된 견적서는 자동 삭제</strong>됩니다.</p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -447,7 +447,7 @@
                 <main id="page-unprocessed" class="p-8 space-y-6 page-section hidden">
                     <div class="p-4 rounded-xl flex items-center gap-4" style="background: var(--accent-soft); border: 1px solid #EAD9BC; color:#6B4A15;">
                         <i class="fa-solid fa-circle-info text-xl" style="color:#B98A3E;"></i>
-                        <p class="text-xs">문의일 기준 <strong>30일 경과 건</strong> 또는 진행상태를 <strong>[미진행]으로 수동 지정한 건</strong>들이 격리 저장되는 보관함입니다. 문의일 기준 <strong>7개월이 경과하면 첨부된 견적서 파일과 함께 자동 삭제</strong>됩니다.</p>
+                        <p class="text-xs">문의일 기준 30일 경과 건 또는 [미진행] 수동으로 이동된 미진행 내역입니다. (보관기간 : 7개월)</p>
                     </div>
 
                     <div class="card p-4 space-y-3">
@@ -523,31 +523,13 @@
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <div class="card p-5 space-y-4">
-                            <div class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-muted);">최근 6개월 추이 (문의일자 기준)</div>
-                            <div>
-                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">상담건수</div>
-                                <div style="height:130px;"><canvas id="chart-recent-inquiry"></canvas></div>
-                            </div>
-                            <div>
-                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">거래건수</div>
-                                <div style="height:130px;"><canvas id="chart-recent-count"></canvas></div>
-                            </div>
-                            <div>
-                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">거래전환율</div>
-                                <div style="height:130px;"><canvas id="chart-recent-conversion"></canvas></div>
-                            </div>
+                        <div class="card p-5 space-y-3">
+                            <div class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-muted);">최근 6개월 추이 (상담건수: 문의일자 / 거래건수: 납품일자 기준)</div>
+                            <div style="height:300px;"><canvas id="chart-recent-combo"></canvas></div>
                         </div>
-                        <div class="card p-5 space-y-4">
-                            <div class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-muted);">전년도 대비 올해</div>
-                            <div>
-                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">총 완료 거래금액</div>
-                                <div style="height:160px;"><canvas id="chart-yoy-amount"></canvas></div>
-                            </div>
-                            <div>
-                                <div class="text-[11px] mb-1" style="color:var(--text-muted);">거래건수</div>
-                                <div style="height:160px;"><canvas id="chart-yoy-count"></canvas></div>
-                            </div>
+                        <div class="card p-5 space-y-3">
+                            <div class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-muted);">연도별 통계 (최근 6년) — 거래금액·거래건수</div>
+                            <div style="height:300px;"><canvas id="chart-yoy-combo"></canvas></div>
                         </div>
                     </div>
 
@@ -1215,10 +1197,10 @@
             }
         }
 
-        // 거래완료 건의 견적서 파일 보관 기간: 납품일자 기준 6개월. 상담 내역(행)은 유지하고, 첨부된 견적서 파일만 삭제.
+        // 거래완료 건의 견적서 파일 보관 기간: 납품일자 기준 7개월. 상담 내역(행)은 유지하고, 첨부된 견적서 파일만 삭제.
         async function pruneExpiredCompletedEstimates() {
             const cutoff = new Date(CURRENT_SYSTEM_DATE);
-            cutoff.setMonth(cutoff.getMonth() - 6);
+            cutoff.setMonth(cutoff.getMonth() - 7);
 
             const targets = masterData.filter(item =>
                 item.status === "거래완료" && item.deliveryDate && item.estimateImg && new Date(item.deliveryDate) < cutoff
@@ -1231,7 +1213,7 @@
                 await apiPost("upsertRow", { item: { code: item.code, estimateImg: "" } });
             }
             saveToStorage();
-            logActivity("자동 삭제", `납품일자 6개월 경과로 거래완료 건 ${targets.length}건의 견적서 파일 자동 삭제(상담 내역은 유지)`);
+            logActivity("자동 삭제", `납품일자 7개월 경과로 거래완료 건 ${targets.length}건의 견적서 파일 자동 삭제(상담 내역은 유지)`);
         }
 
         function calculateWorkflowStats() {
@@ -1562,10 +1544,11 @@
                 return { label: `${year}.${String(month).padStart(2, '0')}`, ...s };
             });
 
-            // 전년도 대비 올해 (납품일자(거래완료) 기준)
+            // 연도별 통계: 이번년도 포함 최근 6년 (납품일자(거래완료) 기준으로 거래건수/거래금액 집계)
             const thisYear = now.getFullYear();
-            const lastYear = thisYear - 1;
-            const yearStats = [lastYear, thisYear].map(year => {
+            const yearList = [];
+            for (let i = 5; i >= 0; i--) yearList.push(thisYear - i);
+            const yearStats = yearList.map(year => {
                 const items = allCompleted.filter(i => i.deliveryDate && new Date(i.deliveryDate).getFullYear() === year);
                 return {
                     label: `${year}년`,
@@ -1574,12 +1557,22 @@
                 };
             });
 
-            renderBarChart('chart-recent-inquiry', recentStats.map(s => s.label), recentStats.map(s => s.inquiryCount), '#3E5C9A', 'count');
-            renderBarChart('chart-recent-count', recentStats.map(s => s.label), recentStats.map(s => s.dealCount), '#0E7C71', 'count');
-            renderBarChart('chart-recent-conversion', recentStats.map(s => s.label), recentStats.map(s => Math.round(s.conversionRate * 10) / 10), '#BD7B22', 'percent');
+            renderComboChart('chart-recent-combo', recentStats.map(s => s.label), [
+                { type: 'bar', label: '상담건수', data: recentStats.map(s => s.inquiryCount), color: '#3E5C9A', yAxisID: 'y', format: 'count' },
+                { type: 'bar', label: '거래건수', data: recentStats.map(s => s.dealCount), color: '#0E7C71', yAxisID: 'y', format: 'count' },
+                { type: 'line', label: '거래전환율', data: recentStats.map(s => Math.round(s.conversionRate * 10) / 10), color: '#BD7B22', yAxisID: 'y1', format: 'percent' }
+            ], [
+                { id: 'y', position: 'left', title: '건수' },
+                { id: 'y1', position: 'right', title: '전환율(%)' }
+            ]);
 
-            renderBarChart('chart-yoy-amount', yearStats.map(s => s.label), yearStats.map(s => s.amount), '#BD7B22', 'currency');
-            renderBarChart('chart-yoy-count', yearStats.map(s => s.label), yearStats.map(s => s.count), '#0E7C71', 'count');
+            renderComboChart('chart-yoy-combo', yearStats.map(s => s.label), [
+                { type: 'bar', label: '거래금액', data: yearStats.map(s => s.amount), color: '#BD7B22', yAxisID: 'y', format: 'currency' },
+                { type: 'bar', label: '거래건수', data: yearStats.map(s => s.count), color: '#0E7C71', yAxisID: 'y1', format: 'count' }
+            ], [
+                { id: 'y', position: 'left', title: '거래금액(₩)' },
+                { id: 'y1', position: 'right', title: '거래건수' }
+            ]);
 
             // 월별 표: 이번달 포함 최근 12개월 (오래된 달 → 최신 달 순, 납품일자(거래완료) 기준)
             const rows = [];
@@ -1612,49 +1605,82 @@
             return { year, month, amount, count: items.length, qty, commission: amount * 0.04 }; // 수수료(VAT 별도)
         }
 
-        // 문의일자 기준 월별 집계: 상담건수 / 거래건수(그 중 거래완료된 건) / 거래전환율
+        // 상담건수는 문의일자 기준, 거래건수는 납품일자(거래완료) 기준으로 각각 집계 (앱 전체에서 "거래건수"의 의미를 통일)
         function buildInquiryMonthlyStats(year, month) {
-            const items = masterData.filter(i => {
+            const inquiryCount = masterData.filter(i => {
                 if (!i.date) return false;
                 const d = new Date(i.date);
                 return d.getFullYear() === year && (d.getMonth() + 1) === month;
-            });
-            const inquiryCount = items.length;
-            const dealCount = items.filter(i => i.status === '거래완료').length;
+            }).length;
+
+            const dealCount = masterData.filter(i => {
+                if (i.status !== '거래완료' || !i.deliveryDate) return false;
+                const d = new Date(i.deliveryDate);
+                return d.getFullYear() === year && (d.getMonth() + 1) === month;
+            }).length;
+
             const conversionRate = inquiryCount > 0 ? (dealCount / inquiryCount) * 100 : 0;
             return { inquiryCount, dealCount, conversionRate };
         }
 
-        function renderBarChart(canvasId, labels, data, color, format) {
+        // datasetsConfig: [{ type:'bar'|'line', label, data, color, yAxisID, format:'currency'|'count'|'percent' }, ...]
+        // axisConfig: [{ id:'y'|'y1', position:'left'|'right', title }, ...]
+        function renderComboChart(canvasId, labels, datasetsConfig, axisConfig) {
             const ctx = document.getElementById(canvasId);
             if (!ctx || typeof Chart === 'undefined') return;
             if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
 
-            const formatValue = (v) => {
-                if (format === 'currency') return `₩${Number(v).toLocaleString()}`;
-                if (format === 'percent') return `${v}%`;
-                return `${v}건`;
-            };
+            const datasets = datasetsConfig.map(d => ({
+                type: d.type,
+                label: d.label,
+                data: d.data,
+                backgroundColor: d.color,
+                borderColor: d.color,
+                yAxisID: d.yAxisID,
+                borderRadius: d.type === 'bar' ? 6 : undefined,
+                maxBarThickness: d.type === 'bar' ? 42 : undefined,
+                tension: d.type === 'line' ? 0.3 : undefined,
+                fill: false
+            }));
+
+            const scales = { x: { grid: { display: false } } };
+            axisConfig.forEach(a => {
+                scales[a.id] = {
+                    type: 'linear',
+                    position: a.position,
+                    beginAtZero: true,
+                    grid: { drawOnChartArea: a.id === 'y' },
+                    ticks: {
+                        callback: (v) => {
+                            const sample = datasetsConfig.find(d => d.yAxisID === a.id);
+                            const fmt = sample ? sample.format : 'count';
+                            return fmt === 'currency' ? Number(v).toLocaleString() : (fmt === 'percent' ? v + '%' : v);
+                        }
+                    },
+                    title: { display: true, text: a.title, font: { size: 10 } }
+                };
+            });
 
             chartInstances[canvasId] = new Chart(ctx, {
-                type: 'bar',
-                data: { labels, datasets: [{ data, backgroundColor: color, borderRadius: 6, maxBarThickness: 56 }] },
+                data: { labels, datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: (c) => formatValue(c.parsed.y) } }
+                        legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (c) => {
+                                    const cfg = datasetsConfig[c.datasetIndex];
+                                    const v = c.parsed.y;
+                                    if (cfg.format === 'currency') return `${cfg.label}: ₩${Number(v).toLocaleString()}`;
+                                    if (cfg.format === 'percent') return `${cfg.label}: ${v}%`;
+                                    return `${cfg.label}: ${v}건`;
+                                }
+                            }
+                        }
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { callback: (v) => format === 'currency' ? Number(v).toLocaleString() : (format === 'percent' ? v + '%' : v) },
-                            // 세로축 폭을 고정해서, 같은 카드 안 여러 차트의 그래프 시작 위치(플롯 영역)를 서로 맞춤
-                            afterFit: (axis) => { axis.width = 64; }
-                        },
-                        x: { grid: { display: false } }
-                    }
+                    scales
                 }
             });
         }
