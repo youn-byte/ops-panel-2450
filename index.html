@@ -1572,17 +1572,20 @@
             });
 
             // 연도별 통계: 이번년도 포함 최근 6년 (납품일자(거래완료) 기준으로 거래건수/거래금액 집계)
+            // 데이터가 아예 없는 연도는 목록에서 제외 (예: 아직 입력 안 된 과거 연도)
             const thisYear = now.getFullYear();
             const yearList = [];
             for (let i = 5; i >= 0; i--) yearList.push(thisYear - i);
-            const yearStats = yearList.map(year => {
-                const items = allCompleted.filter(i => i.deliveryDate && new Date(i.deliveryDate).getFullYear() === year);
-                return {
-                    label: `${year}년`,
-                    amount: items.reduce((s, i) => s + (Number(i.price) || 0), 0),
-                    count: items.length
-                };
-            });
+            const yearStats = yearList
+                .map(year => {
+                    const items = allCompleted.filter(i => i.deliveryDate && new Date(i.deliveryDate).getFullYear() === year);
+                    return {
+                        label: `${year}년`,
+                        amount: items.reduce((s, i) => s + (Number(i.price) || 0), 0),
+                        count: items.length
+                    };
+                })
+                .filter(s => s.count > 0);
 
             renderComboChart('chart-recent-combo', recentStats.map(s => s.label), [
                 { type: 'bar', label: '상담건수', data: recentStats.map(s => s.inquiryCount), color: '#3E5C9A', yAxisID: 'y', format: 'count' },
