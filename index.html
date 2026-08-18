@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>샵다나와 기업구매상담 관리시스템</title>
+    <title>샵다나와 기업구매상담 협업 관리 시스템 v3.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1012,7 +1012,8 @@
         let currentSessionName = "";
         // 사용자 관리 / 통계자료 페이지 전용 추가 비밀번호. 값 자체는 클라이언트에 두지 않고,
         // 구글시트의 "설정" 탭(A열:키, B열:값 / 키="관리자페이지비밀번호")에서 서버가 직접 대조함.
-        let adminPagesUnlocked = false;
+        let statsPageUnlocked = false;
+        let usersPageUnlocked = false;
         let pendingPageAfterUnlock = null;
 
         function setLoggedInMdDisplay(mdName) {
@@ -1105,7 +1106,8 @@
 
             logActivity("로그아웃", "");
             currentSessionName = "";
-            adminPagesUnlocked = false;
+            statsPageUnlocked = false;
+            usersPageUnlocked = false;
             stopAutoRefresh();
 
             document.getElementById('auth-password').value = "";
@@ -1254,8 +1256,12 @@
         }
 
         function switchPage(page) {
-            // 사용자 관리 / 통계자료 페이지는 별도 비밀번호로 한 번 더 확인 (세션 동안 한 번만 물어봄, 둘이 비밀번호 공유)
-            if ((page === 'users' || page === 'stats') && !adminPagesUnlocked) {
+            // 사용자 관리 / 통계자료 페이지는 각각 별도 비밀번호로 확인 (세션 동안 페이지별로 한 번만 물어봄)
+            if (page === 'stats' && !statsPageUnlocked) {
+                openPagePasswordModal(page);
+                return;
+            }
+            if (page === 'users' && !usersPageUnlocked) {
                 openPagePasswordModal(page);
                 return;
             }
@@ -1332,7 +1338,7 @@
             const submitBtn = document.querySelector('#pagePasswordForm button[type="submit"]');
             if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = "확인 중..."; }
 
-            const res = await apiPost("verifyAdminPassword", { password: pw });
+            const res = await apiPost("verifyAdminPassword", { password: pw, page: target });
 
             if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "확인"; }
 
@@ -1340,7 +1346,8 @@
                 alert("비밀번호가 올바르지 않습니다.");
                 return;
             }
-            adminPagesUnlocked = true;
+            if (target === 'users') usersPageUnlocked = true;
+            else if (target === 'stats') statsPageUnlocked = true;
             closePagePasswordModal();
             if (target) switchPage(target);
         }
