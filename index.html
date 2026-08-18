@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>샵다나와 기업구매상담 협업 관리 시스템 v3.9</title>
+    <title>샵다나와 기업구매상담 관리시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -237,7 +237,7 @@
             </div>
             <div class="text-xs pt-4 flex flex-col gap-3" style="border-top: 1px solid var(--ink-border); color:#767E96;">
                 <button id="menu-stats" onclick="switchPage('stats')" class="nav-link sub">
-                    <i class="fa-solid fa-chart-line w-4 text-center"></i> 통계자료
+                    <i class="fa-solid fa-chart-line w-4 text-center"></i> 대시보드
                 </button>
                 <button id="menu-users" onclick="switchPage('users')" class="nav-link sub">
                     <i class="fa-solid fa-user-gear w-4 text-center"></i> 사용자 관리
@@ -357,15 +357,15 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="p-6 rounded-2xl text-white" style="background: linear-gradient(135deg, var(--ink), var(--ink-soft));">
-                            <div class="text-sm font-medium" style="color:#9AA1B8;">총 완료 거래금액</div>
+                            <div class="text-sm font-medium" style="color:#9AA1B8;">거래금액</div>
                             <div class="font-display text-3xl font-bold mt-2" id="archive-total-price" style="color: var(--accent);">₩0</div>
                         </div>
                         <div class="card p-6">
-                            <div class="text-sm font-medium" style="color:var(--text-muted);">총 거래건수</div>
+                            <div class="text-sm font-medium" style="color:var(--text-muted);">거래건수</div>
                             <div class="font-display text-2xl font-bold mt-2" id="archive-total-count" style="color:var(--text);">0 건</div>
                         </div>
                         <div class="card p-6">
-                            <div class="text-sm font-medium" style="color:var(--text-muted);">총 납품 PC 수량</div>
+                            <div class="text-sm font-medium" style="color:var(--text-muted);">거래수량</div>
                             <div class="font-display text-2xl font-bold mt-2" id="archive-total-qty" style="color:var(--text);">0 대</div>
                         </div>
                     </div>
@@ -505,14 +505,18 @@
                 </main>
 
                 <main id="page-stats" class="p-8 space-y-6 page-section hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="p-6 rounded-2xl text-white" style="background: linear-gradient(135deg, var(--ink), var(--ink-soft));">
-                            <div class="text-sm font-medium" style="color:#9AA1B8;">이번달 총 완료 거래금액</div>
+                            <div class="text-sm font-medium" style="color:#9AA1B8;">이번달 거래금액</div>
                             <div class="font-display text-3xl font-bold mt-2" id="stats-total-amount" style="color: var(--accent);">₩0</div>
                         </div>
                         <div class="card p-6">
                             <div class="text-sm font-medium" style="color:var(--text-muted);">이번달 거래건수</div>
                             <div class="font-display text-2xl font-bold mt-2" id="stats-total-count" style="color:var(--text);">0 건</div>
+                        </div>
+                        <div class="card p-6">
+                            <div class="text-sm font-medium" style="color:var(--text-muted);">이번달 거래수량</div>
+                            <div class="font-display text-2xl font-bold mt-2" id="stats-total-qty" style="color:var(--text);">0 대</div>
                         </div>
                         <div class="card p-6">
                             <div class="text-sm font-medium" style="color:var(--text-muted);">이번달 수수료 매출 (4%, VAT 미포함)</div>
@@ -537,15 +541,17 @@
                                 <tr>
                                     <th style="width: 90px;">연도</th>
                                     <th style="width: 90px;">월</th>
-                                    <th>총 완료 거래금액</th>
+                                    <th>거래금액</th>
                                     <th>거래건수</th>
-                                    <th>총 납품 PC 수량</th>
+                                    <th>거래수량</th>
                                     <th>수수료(VAT 별도)</th>
                                 </tr>
                             </thead>
                             <tbody id="stats-monthly-tbody" class="text-xs divide-y divide-gray-100 text-gray-700"></tbody>
                         </table>
                     </div>
+
+                    <p class="text-[11px]" style="color:var(--text-muted);">* 계산 방식에 따라 실제 정산 금액과 차이 발생 가능</p>
                 </main>
 
                 <main id="page-users" class="p-8 space-y-6 page-section hidden">
@@ -1293,7 +1299,7 @@
                 applyDefaultDateFilterIfEmpty('filter-unproc-sdate', 'filter-unproc-edate', 60);
                 renderUnprocessedTable();
             } else if (page === 'stats') {
-                document.getElementById('page-title').innerText = "통계자료";
+                document.getElementById('page-title').innerText = "대시보드";
                 renderStatsPage();
             } else if (page === 'users') {
                 document.getElementById('page-title').innerText = "사용자 관리";
@@ -1558,6 +1564,7 @@
             const thisMonthRow = buildMonthlyRow(now.getFullYear(), now.getMonth() + 1, allCompleted);
             document.getElementById('stats-total-amount').innerText = `₩${thisMonthRow.amount.toLocaleString()}`;
             document.getElementById('stats-total-count').innerText = `${thisMonthRow.count} 건`;
+            document.getElementById('stats-total-qty').innerText = `${thisMonthRow.qty} 대`;
             document.getElementById('stats-total-commission').innerText = `₩${Math.round(thisMonthRow.commission).toLocaleString()}`;
 
             // 최근 6개월 (문의일자 기준): 상담건수 / 거래건수 / 거래전환율
