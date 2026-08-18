@@ -229,11 +229,9 @@
                     </button>
                     <button id="menu-completed" onclick="switchPage('completed')" class="nav-link">
                         <i class="fa-solid fa-box-archive w-4 text-center"></i> 거래 완료 내역
-                        <span id="badge-completed-count" class="ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-bold" style="background: var(--ink-soft); color:#C9CEDC;">0</span>
                     </button>
                     <button id="menu-unprocessed" onclick="switchPage('unprocessed')" class="nav-link">
                         <i class="fa-solid fa-hourglass-end w-4 text-center"></i> 미진행 내역
-                        <span id="badge-unprocessed-count" class="ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-bold" style="background: var(--ink-soft); color:#C9CEDC;">0</span>
                     </button>
                 </nav>
             </div>
@@ -524,11 +522,11 @@
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div class="card p-5 space-y-3">
-                            <div class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-muted);">최근 6개월 추이 (상담건수: 문의일자 / 거래건수: 납품일자 기준)</div>
+                            <div class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-muted);">최근 6개월</div>
                             <div style="height:300px;"><canvas id="chart-recent-combo"></canvas></div>
                         </div>
                         <div class="card p-5 space-y-3">
-                            <div class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-muted);">연도별 통계 (최근 6년) — 거래금액·거래건수</div>
+                            <div class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-muted);">연도별</div>
                             <div style="height:300px;"><canvas id="chart-yoy-combo"></canvas></div>
                         </div>
                     </div>
@@ -1237,9 +1235,6 @@
             if(document.getElementById('count-견적서발송')) document.getElementById('count-견적서발송').innerText = stats["견적서발송"];
             if(document.getElementById('count-거래진행중')) document.getElementById('count-거래진행중').innerText = stats["거래진행중"];
             if(document.getElementById('count-촬영입고')) document.getElementById('count-촬영입고').innerText = stats["촬영입고"];
-            
-            if(document.getElementById('badge-completed-count')) document.getElementById('badge-completed-count').innerText = stats["거래완료"];
-            if(document.getElementById('badge-unprocessed-count')) document.getElementById('badge-unprocessed-count').innerText = stats["미진행"];
         }
 
         function setWorkflowFilter(status) {
@@ -1285,9 +1280,11 @@
                 setWorkflowFilter('ALL');
             } else if (page === 'completed') {
                 document.getElementById('page-title').innerText = "거래 완료 내역";
+                applyDefaultDateFilterIfEmpty('filter-comp-sdate', 'filter-comp-edate', 60);
                 renderCompletedTable();
             } else if (page === 'unprocessed') {
                 document.getElementById('page-title').innerText = "미진행 내역";
+                applyDefaultDateFilterIfEmpty('filter-unproc-sdate', 'filter-unproc-edate', 60);
                 renderUnprocessedTable();
             } else if (page === 'stats') {
                 document.getElementById('page-title').innerText = "통계자료";
@@ -1297,6 +1294,20 @@
                 loadUsersForAdmin();
             }
             calculateWorkflowStats();
+        }
+
+        // 문의일자 조회 기간 필터의 기본값: 두 입력칸이 모두 비어있을 때만, 오늘 기준 최근 N일로 채워줌
+        // (이미 값이 있으면 사용자가 직접 설정한 조건이므로 건드리지 않음)
+        function applyDefaultDateFilterIfEmpty(sdateId, edateId, days) {
+            const sEl = document.getElementById(sdateId);
+            const eEl = document.getElementById(edateId);
+            if (!sEl || !eEl || sEl.value || eEl.value) return;
+            const end = new Date(CURRENT_SYSTEM_DATE);
+            const start = new Date(CURRENT_SYSTEM_DATE);
+            start.setDate(start.getDate() - days);
+            const fmt = (d) => d.toISOString().substring(0, 10);
+            sEl.value = fmt(start);
+            eEl.value = fmt(end);
         }
 
         // ===== 페이지 접근 비밀번호 모달 (사용자 관리 / 통계자료 공용) =====
@@ -1574,9 +1585,9 @@
                 { id: 'y1', position: 'right', title: '거래건수' }
             ]);
 
-            // 월별 표: 이번달 포함 최근 12개월 (오래된 달 → 최신 달 순, 납품일자(거래완료) 기준)
+            // 월별 표: 이번달 포함 최근 12개월 (연도·월 내림차순 = 최신 달 → 오래된 달 순, 납품일자(거래완료) 기준)
             const rows = [];
-            for (let i = 11; i >= 0; i--) {
+            for (let i = 0; i <= 11; i++) {
                 const dt = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 rows.push(buildMonthlyRow(dt.getFullYear(), dt.getMonth() + 1, allCompleted));
             }
@@ -1688,6 +1699,7 @@
         function resetCompletedFilters() {
             ["filter-comp-code", "filter-comp-name", "filter-comp-content", "filter-comp-sdate", "filter-comp-edate", "filter-comp-delivery-sdate", "filter-comp-delivery-edate"]
                 .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+            applyDefaultDateFilterIfEmpty('filter-comp-sdate', 'filter-comp-edate', 60);
             completedPage = 1;
             renderCompletedTable();
         }
@@ -1737,6 +1749,7 @@
         function resetUnprocessedFilters() {
             ["filter-unproc-code", "filter-unproc-name", "filter-unproc-content", "filter-unproc-sdate", "filter-unproc-edate"]
                 .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+            applyDefaultDateFilterIfEmpty('filter-unproc-sdate', 'filter-unproc-edate', 60);
             unprocessedPage = 1;
             renderUnprocessedTable();
         }
