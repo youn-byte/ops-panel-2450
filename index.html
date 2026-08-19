@@ -181,6 +181,15 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #D8D6C9; border-radius: 6px; }
         ::-webkit-scrollbar-thumb:hover { background: #C4C2B3; }
+
+        /* ===== 모바일 사이드바(드로어) ===== */
+        #app-sidebar.mobile-open { transform: translateX(0) !important; }
+        #sidebar-backdrop.mobile-open { display: block !important; }
+
+        /* ===== 모바일 화면에서 표는 원래 모양 그대로, 옆으로 스크롤해서 봄 ===== */
+        @media (max-width: 767px) {
+            .fixed-table { min-width: 720px; }
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -212,7 +221,8 @@
     </div>
 
     <div id="main-dashboard" class="flex h-screen overflow-hidden hidden">
-        <div class="w-64 text-white p-6 flex flex-col justify-between flex-shrink-0" style="background: var(--ink); box-shadow: 4px 0 24px rgba(0,0,0,0.15);">
+        <div id="sidebar-backdrop" onclick="closeMobileSidebar()" class="fixed inset-0 z-40 hidden" style="background: rgba(0,0,0,0.5);"></div>
+        <div id="app-sidebar" class="w-64 text-white p-6 flex flex-col justify-between flex-shrink-0 fixed inset-y-0 left-0 z-50 -translate-x-full transition-transform duration-200 md:static md:translate-x-0" style="background: var(--ink); box-shadow: 4px 0 24px rgba(0,0,0,0.15);">
             <div>
                 <div class="flex items-center gap-3 mb-8">
                     <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0" style="background: var(--accent); color: var(--ink);">
@@ -250,10 +260,15 @@
         </div>
 
         <div class="flex-1 flex flex-col overflow-hidden">
-            <header class="px-8 py-4 flex justify-between items-center z-40 flex-shrink-0" style="background: var(--surface); border-bottom: 1px solid var(--border);">
-                <h1 id="page-title" class="font-display text-2xl font-bold" style="color: var(--text);">상담 현황 관리</h1>
+            <header class="px-4 md:px-8 py-4 flex justify-between items-center z-40 flex-shrink-0" style="background: var(--surface); border-bottom: 1px solid var(--border);">
                 <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg" style="background: var(--paper); color: var(--text-muted); border: 1px solid var(--border);">
+                    <button id="mobile-menu-btn" onclick="toggleMobileSidebar()" class="md:hidden text-xl" style="color:var(--text);">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h1 id="page-title" class="font-display text-lg md:text-2xl font-bold" style="color: var(--text);">상담 현황 관리</h1>
+                </div>
+                <div class="flex items-center gap-2 md:gap-3">
+                    <div class="hidden sm:flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg" style="background: var(--paper); color: var(--text-muted); border: 1px solid var(--border);">
                         <span class="w-2 h-2 rounded-full animate-pulse" style="background: var(--success);"></span>
                         <span>접속자: <strong style="color:var(--text);" id="logged-in-md-name">임승현</strong></span>
                     </div>
@@ -265,7 +280,7 @@
 
             <div class="flex-1 overflow-y-auto" style="background: var(--paper);">
                 
-                <main id="page-management" class="p-8 space-y-6 page-section">
+                <main id="page-management" class="p-4 md:p-8 space-y-6 page-section">
                     
                     <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
                         <div id="tab-ALL" onclick="setWorkflowFilter('ALL')" class="stage-card active" style="--stage-color:#3E5C9A;">
@@ -325,7 +340,7 @@
                     </div>
 
                     <div class="card overflow-hidden">
-                        <div class="max-h-[60vh] overflow-y-auto">
+                        <div class="max-h-[60vh] overflow-y-auto overflow-x-auto">
                             <table class="fixed-table text-left border-collapse">
                                 <thead class="th-head sticky top-0 z-10">
                                     <tr>
@@ -349,7 +364,7 @@
                     </div>
                 </main>
 
-                <main id="page-completed" class="p-8 space-y-6 page-section hidden">
+                <main id="page-completed" class="p-4 md:p-8 space-y-6 page-section hidden">
                     <div class="p-4 rounded-xl flex items-center gap-4" style="background: var(--accent-soft); border: 1px solid #EAD9BC; color:#6B4A15;">
                         <i class="fa-solid fa-circle-info text-xl" style="color:#B98A3E;"></i>
                         <p class="text-xs">납품일자(거래완료) 기준 <strong>7개월 경과 시 첨부된 견적서는 자동 삭제</strong>됩니다.</p>
@@ -442,7 +457,7 @@
                     </div>
                 </main>
 
-                <main id="page-unprocessed" class="p-8 space-y-6 page-section hidden">
+                <main id="page-unprocessed" class="p-4 md:p-8 space-y-6 page-section hidden">
                     <div class="p-4 rounded-xl flex items-center gap-4" style="background: var(--accent-soft); border: 1px solid #EAD9BC; color:#6B4A15;">
                         <i class="fa-solid fa-circle-info text-xl" style="color:#B98A3E;"></i>
                         <p class="text-xs">문의일 기준 30일 경과 건 또는 [미진행] 수동으로 이동된 미진행 내역입니다. (보관기간 : 7개월)</p>
@@ -504,7 +519,7 @@
                     </div>
                 </main>
 
-                <main id="page-stats" class="p-8 space-y-6 page-section hidden">
+                <main id="page-stats" class="p-4 md:p-8 space-y-6 page-section hidden">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="p-6 rounded-2xl text-white" style="background: linear-gradient(135deg, var(--ink), var(--ink-soft));">
                             <div class="text-sm font-medium" style="color:#9AA1B8;">이번달 거래금액</div>
@@ -536,6 +551,7 @@
                     </div>
 
                     <div class="card overflow-hidden">
+                        <div class="overflow-x-auto">
                         <table class="fixed-table text-left border-collapse">
                             <thead class="th-head">
                                 <tr>
@@ -549,12 +565,13 @@
                             </thead>
                             <tbody id="stats-monthly-tbody" class="text-xs divide-y divide-gray-100 text-gray-700"></tbody>
                         </table>
+                        </div>
                     </div>
 
                     <p class="text-[11px]" style="color:var(--text-muted);">* 계산 방식에 따라 실제 정산 금액과 차이 발생 가능</p>
                 </main>
 
-                <main id="page-users" class="p-8 space-y-6 page-section hidden">
+                <main id="page-users" class="p-4 md:p-8 space-y-6 page-section hidden">
                     <div class="card p-4 flex flex-wrap gap-4 items-center justify-between">
                         <span class="text-xs font-semibold px-3 py-2 rounded-lg" style="background: var(--paper); color: var(--text-muted);">
                             총 <span id="user-count">0</span>명의 사용자가 등록되어 있습니다
@@ -565,6 +582,7 @@
                     </div>
 
                     <div class="card overflow-hidden">
+                        <div class="overflow-x-auto">
                         <table class="fixed-table text-left border-collapse">
                             <thead class="th-head">
                                 <tr>
@@ -576,6 +594,7 @@
                             <tbody id="users-tbody" class="text-xs divide-y divide-gray-100 text-gray-700">
                                 </tbody>
                         </table>
+                        </div>
                     </div>
                 </main>
             </div>
@@ -1261,7 +1280,19 @@
             renderManagementTable();
         }
 
+        // 모바일 사이드바(드로어) 열기/닫기
+        function toggleMobileSidebar() {
+            document.getElementById('app-sidebar').classList.toggle('mobile-open');
+            document.getElementById('sidebar-backdrop').classList.toggle('mobile-open');
+        }
+        function closeMobileSidebar() {
+            document.getElementById('app-sidebar').classList.remove('mobile-open');
+            document.getElementById('sidebar-backdrop').classList.remove('mobile-open');
+        }
+
         function switchPage(page) {
+            closeMobileSidebar(); // 모바일에서 메뉴를 눌러 이동하면 드로어는 자동으로 닫음
+
             // 사용자 관리 / 통계자료 페이지는 각각 별도 비밀번호로 확인 (세션 동안 페이지별로 한 번만 물어봄)
             if (page === 'stats' && !statsPageUnlocked) {
                 openPagePasswordModal(page);
@@ -1426,12 +1457,12 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 border-b border-gray-100 transition";
                 tr.innerHTML = `
-                    <td class="text-center text-gray-400 font-mono">${item.no}</td>
-                    <td class="font-mono font-bold">${item.code}</td>
-                    <td>${item.date}</td>
-                    <td class="font-semibold">${item.name}</td>
-                    <td title="${item.content}">${item.content}</td>
-                    <td class="text-center">
+                    <td data-label="NO" class="text-center text-gray-400 font-mono">${item.no}</td>
+                    <td data-label="상담번호" class="font-mono font-bold">${item.code}</td>
+                    <td data-label="문의일자">${item.date}</td>
+                    <td data-label="상호(이름)" class="font-semibold">${item.name}</td>
+                    <td data-label="상담내용" title="${item.content}">${item.content}</td>
+                    <td data-label="진행상태" class="text-center">
                         <select onchange="updateStatusInline(${item.originalIndex}, this.value)" class="field text-xs w-full max-w-[122px]" style="padding:5px 8px; border-left:3px solid ${(STATUS_META[item.status] || {}).color || 'var(--border)'};">
                             <option value="상담중" ${item.status==='상담중'?'selected':''}>상담중</option>
                             <option value="상담완료" ${item.status==='상담완료'?'selected':''}>상담완료</option>
@@ -1442,10 +1473,10 @@
                             <option value="미진행" ${item.status==='미진행'?'selected':''}>미진행</option>
                         </select>
                     </td>
-                    <td class="text-center">${item.qty}</td>
-                    <td class="text-right font-semibold">₩${item.price.toLocaleString()}</td>
-                    <td class="text-center">${imgHtml}</td>
-                    <td class="text-center">
+                    <td data-label="총 수량" class="text-center">${item.qty}</td>
+                    <td data-label="총 견적금액" class="text-right font-semibold">₩${item.price.toLocaleString()}</td>
+                    <td data-label="견적서" class="text-center">${imgHtml}</td>
+                    <td data-label="관리 메뉴" class="text-center">
                         <div class="flex justify-center gap-1">
                             <button onclick="openEditModal(${item.originalIndex})" class="chip-btn">수정</button>
                             <button onclick="deleteData(${item.originalIndex})" class="chip-btn" style="color:var(--danger);">삭제</button>
@@ -1516,31 +1547,31 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 border-b border-gray-100 transition";
                 tr.innerHTML = `
-                    <td class="text-center text-gray-400 font-mono">${item.no}</td>
-                    <td class="font-mono font-bold">${item.code}</td>
-                    <td>${item.date}</td>
-                    <td class="font-semibold">${item.name}</td>
-                    <td title="${item.content}">${item.content}</td>
-                    <td class="text-center font-medium">${item.qty}</td>
-                    <td class="text-right font-semibold">₩${item.price.toLocaleString()}</td>
-                    <td class="text-center">${imgHtml}</td>
-                    <td class="text-center">
+                    <td data-label="NO" class="text-center text-gray-400 font-mono">${item.no}</td>
+                    <td data-label="상담번호" class="font-mono font-bold">${item.code}</td>
+                    <td data-label="문의일자">${item.date}</td>
+                    <td data-label="상호(이름)" class="font-semibold">${item.name}</td>
+                    <td data-label="상담내용" title="${item.content}">${item.content}</td>
+                    <td data-label="총 수량" class="text-center font-medium">${item.qty}</td>
+                    <td data-label="총 견적금액" class="text-right font-semibold">₩${item.price.toLocaleString()}</td>
+                    <td data-label="견적서" class="text-center">${imgHtml}</td>
+                    <td data-label="납품일자(거래완료)" class="text-center">
                         <input type="date" value="${item.deliveryDate || ''}" onchange="masterData[${item.originalIndex}].deliveryDate = this.value; saveToStorage(); apiPost('updateField', {code: masterData[${item.originalIndex}].code, field:'deliveryDate', value: this.value}); renderCompletedTable();" class="p-1 border border-gray-300 rounded bg-white text-xs text-center outline-none w-full max-w-[132px]">
                     </td>
-                    <td class="text-center">
+                    <td data-label="콘텐츠" class="text-center">
                         <select onchange="masterData[${item.originalIndex}].contentStatus = this.value; saveToStorage(); apiPost('updateField', {code: masterData[${item.originalIndex}].code, field:'contentStatus', value: this.value}); renderCompletedTable();" class="field text-xs w-full max-w-[98px]" style="padding:5px 8px; font-weight:600; border-left:3px solid ${(CONTENT_META[item.contentStatus] || {}).color}; color:${(CONTENT_META[item.contentStatus] || {}).color};">
                             <option value="" ${item.contentStatus===''?'selected':''}>-</option>
                             <option value="제작중" ${item.contentStatus==='제작중'?'selected':''}>제작중</option>
                             <option value="배포완료" ${item.contentStatus==='배포완료'?'selected':''}>배포완료</option>
                         </select>
                     </td>
-                    <td class="text-center">
+                    <td data-label="콘텐츠 링크" class="text-center">
                         ${item.contentLink
                             ? `<a href="${item.contentLink}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium" style="background:var(--teal-soft); color:var(--teal); border:1px solid rgba(14,124,113,0.25);" title="${item.contentLink}"><i class="fa-solid fa-arrow-up-right-from-square"></i> 링크</a>`
                             : `<span class="text-[11px] text-gray-300">미등록</span>`
                         }
                     </td>
-                    <td class="text-center">
+                    <td data-label="관리 메뉴" class="text-center">
                         <div class="flex justify-center gap-1">
                             <button onclick="openEditModal(${item.originalIndex})" class="chip-btn">수정</button>
                             <button onclick="restoreStatus(${item.originalIndex})" class="chip-btn">이동</button>
@@ -1604,10 +1635,10 @@
             ]);
 
             renderComboChart('chart-yoy-combo', yearStats.map(s => s.label), [
-                { type: 'bar', label: '거래금액', data: yearStats.map(s => s.amount), color: '#BD7B22', yAxisID: 'y', format: 'currency' },
+                { type: 'bar', label: '거래금액', data: yearStats.map(s => s.amount), color: '#BD7B22', yAxisID: 'y', format: 'currency_eok' },
                 { type: 'bar', label: '거래건수', data: yearStats.map(s => s.count), color: '#0E7C71', yAxisID: 'y1', format: 'count' }
             ], [
-                { id: 'y', position: 'left', title: '거래금액(₩)' },
+                { id: 'y', position: 'left', title: '거래금액(억원)' },
                 { id: 'y1', position: 'right', title: '거래건수' }
             ]);
 
@@ -1620,12 +1651,12 @@
 
             document.getElementById('stats-monthly-tbody').innerHTML = rows.map(r => `
                 <tr class="hover:bg-slate-50 border-b border-gray-100 transition">
-                    <td>${r.year}</td>
-                    <td>${r.month}월</td>
-                    <td>₩${r.amount.toLocaleString()}</td>
-                    <td>${r.count} 건</td>
-                    <td>${r.qty} 대</td>
-                    <td>₩${Math.round(r.commission).toLocaleString()}</td>
+                    <td data-label="연도">${r.year}</td>
+                    <td data-label="월">${r.month}월</td>
+                    <td data-label="거래금액">₩${r.amount.toLocaleString()}</td>
+                    <td data-label="거래건수">${r.count} 건</td>
+                    <td data-label="거래수량">${r.qty} 대</td>
+                    <td data-label="수수료(VAT 별도)">₩${Math.round(r.commission).toLocaleString()}</td>
                 </tr>
             `).join('');
         }
@@ -1662,6 +1693,18 @@
 
         // datasetsConfig: [{ type:'bar'|'line', label, data, color, yAxisID, format:'currency'|'count'|'percent' }, ...]
         // axisConfig: [{ id:'y'|'y1', position:'left'|'right', title }, ...]
+        // 금액을 "2.5억" 같은 억 단위 표기로 축약 (1억 미만이면 "만" 단위로)
+        function formatEok(v) {
+            const num = Number(v) || 0;
+            const eok = num / 100000000;
+            if (Math.abs(eok) >= 1) {
+                const rounded = Math.round(eok * 10) / 10;
+                return `${rounded}억`;
+            }
+            const man = Math.round(num / 10000);
+            return `${man}만`;
+        }
+
         function renderComboChart(canvasId, labels, datasetsConfig, axisConfig) {
             const ctx = document.getElementById(canvasId);
             if (!ctx || typeof Chart === 'undefined') return;
@@ -1691,7 +1734,10 @@
                         callback: (v) => {
                             const sample = datasetsConfig.find(d => d.yAxisID === a.id);
                             const fmt = sample ? sample.format : 'count';
-                            return fmt === 'currency' ? Number(v).toLocaleString() : (fmt === 'percent' ? v + '%' : v);
+                            if (fmt === 'currency') return Number(v).toLocaleString();
+                            if (fmt === 'currency_eok') return formatEok(v);
+                            if (fmt === 'percent') return v + '%';
+                            return v;
                         }
                     },
                     title: { display: true, text: a.title, font: { size: 10 } }
@@ -1710,7 +1756,7 @@
                                 label: (c) => {
                                     const cfg = datasetsConfig[c.datasetIndex];
                                     const v = c.parsed.y;
-                                    if (cfg.format === 'currency') return `${cfg.label}: ₩${Number(v).toLocaleString()}`;
+                                    if (cfg.format === 'currency' || cfg.format === 'currency_eok') return `${cfg.label}: ₩${Number(v).toLocaleString()}`;
                                     if (cfg.format === 'percent') return `${cfg.label}: ${v}%`;
                                     return `${cfg.label}: ${v}건`;
                                 }
@@ -1828,16 +1874,16 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 bg-white border-b border-gray-100 transition";
                 tr.innerHTML = `
-                    <td class="text-center text-gray-400 font-mono">${item.no}</td>
-                    <td class="font-mono font-bold">${item.code}</td>
-                    <td>${item.date}</td>
-                    <td class="font-semibold">${item.name}</td>
-                    <td title="${item.content}">${item.content}</td>
-                    <td class="text-center"><span class="status-pill" style="--pill-bg:${(STATUS_META[item.status] || {}).color || '#888888'}22; --pill-fg:${(STATUS_META[item.status] || {}).color || 'var(--text-muted)'};">${item.status === '미진행' ? '수동지정' : item.status}</span></td>
-                    <td class="text-center">${item.qty}</td>
-                    <td class="text-right font-semibold">₩${item.price.toLocaleString()}</td>
-                    <td class="text-center">${imgHtml}</td>
-                    <td class="text-center">
+                    <td data-label="NO" class="text-center text-gray-400 font-mono">${item.no}</td>
+                    <td data-label="상담번호" class="font-mono font-bold">${item.code}</td>
+                    <td data-label="문의일자">${item.date}</td>
+                    <td data-label="상호(이름)" class="font-semibold">${item.name}</td>
+                    <td data-label="상담내용" title="${item.content}">${item.content}</td>
+                    <td data-label="기존상태" class="text-center"><span class="status-pill" style="--pill-bg:${(STATUS_META[item.status] || {}).color || '#888888'}22; --pill-fg:${(STATUS_META[item.status] || {}).color || 'var(--text-muted)'};">${item.status === '미진행' ? '수동지정' : item.status}</span></td>
+                    <td data-label="총 수량" class="text-center">${item.qty}</td>
+                    <td data-label="총 견적금액" class="text-right font-semibold">₩${item.price.toLocaleString()}</td>
+                    <td data-label="견적서" class="text-center">${imgHtml}</td>
+                    <td data-label="관리 메뉴" class="text-center">
                         <div class="flex justify-center gap-1">
                             <button onclick="openEditModal(${item.originalIndex})" class="chip-btn">수정</button>
                             <button onclick="restoreFromUnprocessed(${item.originalIndex})" class="chip-btn">이동</button>
@@ -1891,12 +1937,12 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 border-b border-gray-100 transition";
                 tr.innerHTML = `
-                    <td class="font-semibold">${name}</td>
-                    <td class="font-mono text-gray-500">
+                    <td data-label="이름" class="font-semibold">${name}</td>
+                    <td data-label="비밀번호" class="font-mono text-gray-500">
                         <span class="pw-masked" data-pw="${pw}">••••••••</span>
                         <button type="button" onclick="togglePwVisibility(this)" class="ml-2 text-[10px] text-blue-500 hover:underline">보기</button>
                     </td>
-                    <td class="text-center">
+                    <td data-label="관리 메뉴" class="text-center">
                         <div class="flex justify-center gap-1">
                             <button onclick="openEditUserModal('${pw}')" class="chip-btn">수정</button>
                             <button onclick="openUserLogModal('${name}')" class="chip-btn" style="color:var(--teal);">로그</button>
