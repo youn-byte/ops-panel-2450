@@ -505,7 +505,7 @@
                                         <th style="width: 112px;">문의일자</th>
                                         <th style="width: 250px;">상호(이름)</th>
                                         <th style="width: 280px;">상담내용</th>
-                                        <th class="text-center" style="width: 110px;">기존상태</th>
+                                        <th class="text-center" style="width: 110px;">상태</th>
                                         <th class="text-center" style="width: 80px;">총 수량</th>
                                         <th class="text-right" style="width: 120px;">총 견적금액</th>
                                         <th class="text-center" style="width: 90px;">견적서</th>
@@ -1887,7 +1887,7 @@
                     <td data-label="문의일자">${item.date}</td>
                     <td data-label="상호(이름)" class="font-semibold">${item.name}</td>
                     <td data-label="상담내용" title="${item.content}">${item.content}</td>
-                    <td data-label="기존상태" class="text-center"><span class="status-pill" style="--pill-bg:${(STATUS_META[item.status] || {}).color || '#888888'}22; --pill-fg:${(STATUS_META[item.status] || {}).color || 'var(--text-muted)'};">${item.status === '미진행' ? '수동지정' : item.status}</span></td>
+                    <td data-label="상태" class="text-center"><span class="status-pill" style="--pill-bg:${(STATUS_META[item.status] || {}).color || '#888888'}22; --pill-fg:${(STATUS_META[item.status] || {}).color || 'var(--text-muted)'};">${item.status === '미진행' ? '종료' : item.status}</span></td>
                     <td data-label="총 수량" class="text-center">${item.qty}</td>
                     <td data-label="총 견적금액" class="text-right font-semibold">₩${item.price.toLocaleString()}</td>
                     <td data-label="견적서" class="text-center">${imgHtml}</td>
