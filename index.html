@@ -639,6 +639,7 @@
             <h3 id="modalTitle" class="font-display text-lg font-bold mb-4" style="color:var(--text);">신규 상담 등록</h3>
             <form id="crudForm" onsubmit="saveData(event)" class="space-y-4">
                 <input type="hidden" id="form-index">
+                <input type="hidden" id="form-original-code">
                 <div>
                     <label class="block text-xs font-semibold mb-1" style="color:var(--text-muted);">상담번호</label>
                     <input type="text" id="form-code" required class="field text-sm font-mono" placeholder="예: C07090">
@@ -2184,6 +2185,7 @@
             document.getElementById('modalTitle').innerText = "신규 구매 상담 등록";
             document.getElementById('crudForm').reset();
             document.getElementById('form-index').value = "";
+            document.getElementById('form-original-code').value = "";
             modalEstimateFiles = [];
             renderModalEstimateList();
             document.getElementById('crudModal').classList.remove('hidden');
@@ -2193,6 +2195,7 @@
             const item = masterData[index];
             document.getElementById('modalTitle').innerText = "상담 기초정보 수정";
             document.getElementById('form-index').value = index;
+            document.getElementById('form-original-code').value = item.code;
             document.getElementById('form-code').value = item.code;
             document.getElementById('form-date').value = item.date;
             document.getElementById('form-name').value = item.name;
@@ -2289,6 +2292,7 @@
             const serverPayload = index === "" ? payload : {
                 no: payload.no,
                 code: payload.code,
+                originalCode: document.getElementById('form-original-code').value, // 코드가 바뀌어도 서버가 기존 행을 정확히 찾아 수정하도록 함께 전달
                 date: payload.date,
                 name: payload.name,
                 content: payload.content,
