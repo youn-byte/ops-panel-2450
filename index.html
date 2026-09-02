@@ -270,6 +270,10 @@
                     <h1 id="page-title" class="font-display text-lg md:text-2xl font-bold" style="color: var(--text);">상담 현황 관리</h1>
                 </div>
                 <div class="flex items-center gap-2 md:gap-3">
+                    <div id="sync-indicator" class="hidden items-center gap-2 text-xs px-3 py-1.5 rounded-lg" style="background: var(--paper); color: var(--text-muted); border: 1px solid var(--border);">
+                        <i class="fa-solid fa-circle-notch fa-spin" style="color: var(--accent);"></i>
+                        <span>데이터 동기화 중...</span>
+                    </div>
                     <div class="hidden sm:flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg" style="background: var(--paper); color: var(--text-muted); border: 1px solid var(--border);">
                         <span class="w-2 h-2 rounded-full animate-pulse" style="background: var(--success);"></span>
                         <span>접속자: <strong style="color:var(--text);" id="logged-in-md-name">임승현</strong></span>
@@ -745,14 +749,28 @@
             }
         }
 
+        function setSyncIndicator(visible) {
+            const el = document.getElementById('sync-indicator');
+            if (!el) return;
+            el.classList.toggle('hidden', !visible);
+            el.classList.toggle('flex', visible);
+        }
+
         // 서버에서 전체 데이터(masterData/activityLog)를 읽어옴. light=true면 activityLog는 생략하고 masterData만 받아옴
         // (10분마다 도는 자동 새로고침처럼, 다른 사람이 상담 데이터를 바꿨는지만 확인하면 되는 경우 더 가볍게 요청)
+        // 호출되는 동안 헤더에 "데이터 동기화 중..." 표시를 띄워서, 응답이 느릴 때도 화면이 멈춘 게 아니라
+        // 불러오는 중임을 알 수 있게 함
         async function apiFetchAll(light) {
-            const url = `${API_URL}?token=${encodeURIComponent(API_TOKEN)}${light ? '&light=1' : ''}`;
-            const res = await fetchWithTimeout(url);
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
-            return data;
+            setSyncIndicator(true);
+            try {
+                const url = `${API_URL}?token=${encodeURIComponent(API_TOKEN)}${light ? '&light=1' : ''}`;
+                const res = await fetchWithTimeout(url);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                return data;
+            } finally {
+                setSyncIndicator(false);
+            }
         }
 
         // 자동 새로고침(pollServerData)이, 저장/수정 요청이 아직 서버에 반영되기 전에 그 결과를 덮어쓰지 않도록
