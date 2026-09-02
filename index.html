@@ -1420,31 +1420,41 @@
             if (newStatus === "거래완료") masterData[index].prevStatus = oldStatus;
             masterData[index].status = newStatus;
             logActivity("상태 변경", `${code} (${masterData[index].name}) : ${oldStatus} → ${newStatus}`);
-            saveToStorage();
 
+            // 거래완료로 넘어가는 경우의 납품일자/콘텐츠 상태 기본값도, 서버 응답을 기다리지 않고 미리 화면에 반영
+            let deliveryDateToSave = null;
+            let contentStatusToSave = null;
+            if (newStatus === "거래완료") {
+                if (!masterData[index].deliveryDate) {
+                    masterData[index].deliveryDate = new Date().toISOString().substring(0, 10);
+                    deliveryDateToSave = masterData[index].deliveryDate;
+                }
+                // 촬영입고 상태에서 거래완료로 넘어간 경우, 콘텐츠 상태를 자동으로 "촬영완료"로 설정
+                if (oldStatus === "촬영입고" && !masterData[index].contentStatus) {
+                    masterData[index].contentStatus = "촬영완료";
+                    contentStatusToSave = "촬영완료";
+                }
+            }
+
+            saveToStorage();
+            calculateWorkflowStats();
+
+            // 화면 갱신은 서버 응답을 기다리지 않고 여기서 바로 처리함
+            // (서버 저장이 느려도, 화면은 항상 즉시 반응하도록 하기 위함)
+            if (newStatus === "거래완료") {
+                alert("거래완료처리 되어 완료 내역으로 이동되었습니다.");
+                switchPage('completed');
+            } else {
+                renderManagementTable();
+            }
+
+            // 서버 저장은 화면 갱신 이후 백그라운드에서 진행
             const res = await apiPost("updateField", { code, field: "status", value: newStatus });
             if (!res || res.error) {
                 alert(`상태 변경이 서버에 반영되지 못했습니다.\n사유: ${res && res.error ? res.error : "네트워크 오류"}\n\n화면은 우선 바뀌었지만, 새로고침하면 이전 상태로 되돌아갈 수 있습니다.`);
             }
-
-            calculateWorkflowStats();
-            if(newStatus === "거래완료") {
-                if(!masterData[index].deliveryDate) {
-                    masterData[index].deliveryDate = new Date().toISOString().substring(0, 10);
-                    apiPost("updateField", { code, field: "deliveryDate", value: masterData[index].deliveryDate });
-                }
-                // 촬영입고 상태에서 거래완료로 넘어간 경우, 콘텐츠 상태를 자동으로 "촬영완료"로 설정
-                if(oldStatus === "촬영입고" && !masterData[index].contentStatus) {
-                    masterData[index].contentStatus = "촬영완료";
-                    apiPost("updateField", { code, field: "contentStatus", value: "촬영완료" });
-                }
-                alert("거래완료처리 되어 완료 내역으로 이동되었습니다.");
-                switchPage('completed');
-            } else if(newStatus === "미진행") {
-                renderManagementTable();
-            } else {
-                renderManagementTable();
-            }
+            if (deliveryDateToSave) apiPost("updateField", { code, field: "deliveryDate", value: deliveryDateToSave });
+            if (contentStatusToSave) apiPost("updateField", { code, field: "contentStatus", value: contentStatusToSave });
         }
 
         function renderManagementTable() {
