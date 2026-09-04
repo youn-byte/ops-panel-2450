@@ -729,7 +729,7 @@
         // ================= [구글시트 백엔드 연동] =================
         const API_URL = "https://script.google.com/macros/s/AKfycby26cjYllr5FA1sLNO71bsC8Ve-SCvWksIByniVv5m3LytbcaiiNZgp0km1gLccGYRVEg/exec";
         const API_TOKEN = "9o72xnitxhgYqLp6ZtwQ-7eH3Yi8M55r";
-        const API_TIMEOUT_MS = 45000; // 45초 넘게 응답이 없으면 타임아웃 처리 (요청이 무한정 멈춰있는 것을 방지)
+        const API_TIMEOUT_MS = 20000; // 20초 넘게 응답이 없으면 타임아웃 처리 (요청이 무한정 멈춰있는 것을 방지)
 
         function fetchOnce(url, options) {
             const controller = new AbortController();
