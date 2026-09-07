@@ -1381,18 +1381,28 @@
             calculateWorkflowStats();
         }
 
-        // 문의일자 조회 기간 필터의 기본값: 두 입력칸이 모두 비어있을 때만, 오늘 기준 최근 N일로 채워줌
-        // (이미 값이 있으면 사용자가 직접 설정한 조건이므로 건드리지 않음)
+        // 문의일자 조회 기간 필터: 두 입력칸이 모두 비어있으면 오늘 기준 최근 N일로 채워줌.
+        // 이미 값이 있더라도(사용자가 직접 설정했거나, 브라우저가 이전 값을 남겨둔 경우 등)
+        // 종료일이 오늘보다 과거로 고정되어 있으면 자동으로 오늘까지 넓혀줌.
+        // (이렇게 하지 않으면, 예전에 설정된 종료일 때문에 방금 처리한 최신 건이 조용히 목록에서 안 보이는 문제가 생김)
         function applyDefaultDateFilterIfEmpty(sdateId, edateId, days) {
             const sEl = document.getElementById(sdateId);
             const eEl = document.getElementById(edateId);
-            if (!sEl || !eEl || sEl.value || eEl.value) return;
-            const end = new Date(CURRENT_SYSTEM_DATE);
-            const start = new Date(CURRENT_SYSTEM_DATE);
-            start.setDate(start.getDate() - days);
+            if (!sEl || !eEl) return;
             const fmt = (d) => d.toISOString().substring(0, 10);
-            sEl.value = fmt(start);
-            eEl.value = fmt(end);
+            const today = fmt(new Date(CURRENT_SYSTEM_DATE));
+
+            if (!sEl.value && !eEl.value) {
+                const start = new Date(CURRENT_SYSTEM_DATE);
+                start.setDate(start.getDate() - days);
+                sEl.value = fmt(start);
+                eEl.value = today;
+                return;
+            }
+
+            if (eEl.value && eEl.value < today) {
+                eEl.value = today;
+            }
         }
 
         // ===== 페이지 접근 비밀번호 모달 (사용자 관리 / 통계자료 공용) =====
