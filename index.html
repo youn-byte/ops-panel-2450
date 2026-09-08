@@ -800,6 +800,16 @@
         // 기존에는 날짜가 "2026-07-09"로 고정되어 있어 시간이 지나도 30일 경과 판정 기준이 갱신되지 않는 문제가 있었음.
         // 매번 페이지를 로드하는 실제 시각을 기준으로 삼도록 수정.
         const CURRENT_SYSTEM_DATE = new Date();
+
+        // Date 객체를 "YYYY-MM-DD" 문자열로 변환할 때는 항상 이 함수를 사용함.
+        // toISOString()은 UTC(세계표준시) 기준이라, 한국 시간 자정~오전 9시 사이에는
+        // UTC 기준으로 아직 전날이라서 날짜가 하루 이전으로 잘못 계산되는 문제가 있었음.
+        function formatLocalDate(d) {
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const dd = String(d.getDate()).padStart(2, "0");
+            return `${yyyy}-${mm}-${dd}`;
+        }
         // 계정 목록(이름-비밀번호)은 더 이상 로그인 시 통째로 내려받지 않음.
         // 로그인은 서버에서 검증하고, 이 객체는 "사용자 관리" 페이지를 열 때만 그때그때 채워짐.
         const MD_ACCOUNTS = {};
@@ -1389,7 +1399,7 @@
             const sEl = document.getElementById(sdateId);
             const eEl = document.getElementById(edateId);
             if (!sEl || !eEl) return;
-            const fmt = (d) => d.toISOString().substring(0, 10);
+            const fmt = (d) => formatLocalDate(d);
             const today = fmt(new Date(CURRENT_SYSTEM_DATE));
 
             if (!sEl.value && !eEl.value) {
@@ -1454,7 +1464,7 @@
             let contentStatusToSave = null;
             if (newStatus === "거래완료") {
                 if (!masterData[index].deliveryDate) {
-                    masterData[index].deliveryDate = new Date().toISOString().substring(0, 10);
+                    masterData[index].deliveryDate = formatLocalDate(new Date());
                     deliveryDateToSave = masterData[index].deliveryDate;
                 }
                 // 촬영입고 상태에서 거래완료로 넘어간 경우, 콘텐츠 상태를 자동으로 "촬영완료"로 설정
@@ -1881,7 +1891,7 @@
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "거래완료내역");
 
-            const today = new Date().toISOString().substring(0, 10).replace(/-/g, "");
+            const today = formatLocalDate(new Date()).replace(/-/g, "");
             XLSX.writeFile(workbook, `거래완료내역_${today}.xlsx`);
         }
 
@@ -1971,7 +1981,7 @@
                     masterData[index].status = "상담중";
                     apiPost("updateField", { code: masterData[index].code, field: "status", value: "상담중" });
                 }
-                masterData[index].date = new Date().toISOString().substring(0, 10);
+                masterData[index].date = formatLocalDate(new Date());
                 apiPost("updateField", { code: masterData[index].code, field: "date", value: masterData[index].date });
                 saveToStorage();
                 calculateWorkflowStats();
