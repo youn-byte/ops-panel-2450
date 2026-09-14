@@ -1244,9 +1244,15 @@
             return { over: diffDays > 30, days: diffDays };
         }
 
+        // 30일 경과로 인한 자동 미진행 분류에서 제외할 상태.
+        // (이미 실제로 진행 중인 건까지 "오래됐다"는 이유만으로 미진행으로 넘어가면 업무에 혼선을 줄 수 있어 제외함.
+        //  단, 이 상태여도 사용자가 직접 "미진행"으로 지정하면 그건 그대로 미진행 처리됨)
+        const AUTO_UNPROCESSED_EXCLUDED_STATUSES = ["거래진행중", "촬영입고"];
+
         function getItemCategory(item) {
             if (item.status === "거래완료") return "COMPLETED";
-            if (item.status === "미진행" || isOver30Days(item.date).over) return "UNPROCESSED";
+            if (item.status === "미진행") return "UNPROCESSED";
+            if (!AUTO_UNPROCESSED_EXCLUDED_STATUSES.includes(item.status) && isOver30Days(item.date).over) return "UNPROCESSED";
             return "MANAGEMENT";
         }
 
