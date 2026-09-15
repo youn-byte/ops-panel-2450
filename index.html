@@ -1197,6 +1197,7 @@
 
         // ================= [자동 새로고침 (다른 담당자의 변경사항 반영)] =================
         const AUTO_REFRESH_INTERVAL_MS = 600000; // 10분
+        const AUTO_REFRESH_JITTER_MS = 90000; // ±최대 90초, 매 주기마다 무작위로 앞뒤로 흔들어줌
         let autoRefreshTimer = null;
 
         function isAnyModalOpen() {
@@ -1227,14 +1228,32 @@
             }
         }
 
+        // 같은 회사 네트워크(같은 IP)를 쓰는 여러 사용자가 비슷한 시각에 로그인하면,
+        // 자동 새로고침 요청도 서로 비슷한 타이밍에 한꺼번에 몰릴 수 있음.
+        // (구글이 한 IP에서 짧은 시간에 요청이 몰리는 걸 이상 트래픽으로 보고 일시적으로 막는 경우가 있음)
+        // 이를 완화하기 위해, 매 주기마다 기본 간격(10분)에 무작위 오차(최대 ±90초)를 섞어서
+        // 사용자마다 요청 타이밍이 자연스럽게 흩어지도록 함.
+        function nextAutoRefreshDelay() {
+            const jitter = (Math.random() * 2 - 1) * AUTO_REFRESH_JITTER_MS; // -90초 ~ +90초
+            return AUTO_REFRESH_INTERVAL_MS + jitter;
+        }
+
+        let autoRefreshActive = false;
+
         function startAutoRefresh() {
             if (autoRefreshTimer) return;
-            autoRefreshTimer = setInterval(pollServerData, AUTO_REFRESH_INTERVAL_MS);
+            autoRefreshActive = true;
+            const tick = async () => {
+                await pollServerData();
+                if (autoRefreshActive) autoRefreshTimer = setTimeout(tick, nextAutoRefreshDelay());
+            };
+            autoRefreshTimer = setTimeout(tick, nextAutoRefreshDelay());
         }
 
         function stopAutoRefresh() {
+            autoRefreshActive = false;
             if (autoRefreshTimer) {
-                clearInterval(autoRefreshTimer);
+                clearTimeout(autoRefreshTimer);
                 autoRefreshTimer = null;
             }
         }
