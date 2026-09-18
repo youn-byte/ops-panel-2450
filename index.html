@@ -414,17 +414,17 @@
                             <div>
                                 <label class="block text-[11px] text-gray-500 mb-1">문의일자 기간 조회</label>
                                 <div class="flex items-center gap-1">
-                                    <input type="date" id="filter-comp-sdate" onchange="completedPage=1; renderCompletedTable()" class="field text-[11px]">
+                                    <input type="date" id="filter-comp-sdate" onchange="completedPage=1; onCompletedDateFilterChange()" class="field text-[11px]">
                                     <span class="text-gray-400">~</span>
-                                    <input type="date" id="filter-comp-edate" onchange="completedPage=1; renderCompletedTable()" class="field text-[11px]">
+                                    <input type="date" id="filter-comp-edate" onchange="completedPage=1; onCompletedDateFilterChange()" class="field text-[11px]">
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-[11px] text-gray-500 mb-1">납품일자(거래완료) 기간 조회</label>
                                 <div class="flex items-center gap-1">
-                                    <input type="date" id="filter-comp-delivery-sdate" onchange="completedPage=1; renderCompletedTable()" class="field text-[11px]">
+                                    <input type="date" id="filter-comp-delivery-sdate" onchange="completedPage=1; onCompletedDateFilterChange()" class="field text-[11px]">
                                     <span class="text-gray-400">~</span>
-                                    <input type="date" id="filter-comp-delivery-edate" onchange="completedPage=1; renderCompletedTable()" class="field text-[11px]">
+                                    <input type="date" id="filter-comp-delivery-edate" onchange="completedPage=1; onCompletedDateFilterChange()" class="field text-[11px]">
                                 </div>
                             </div>
                         </div>
@@ -810,6 +810,37 @@
             const dd = String(d.getDate()).padStart(2, "0");
             return `${yyyy}-${mm}-${dd}`;
         }
+
+        // ===== 거래완료 데이터 부분 로딩 =====
+        // 서버는 기본적으로 "최근 6개월(납품일자 기준)" 거래완료 건만 내려주고, 그보다 오래된 건은 제외함.
+        // 그 이전 데이터가 필요해지면(거래완료 내역 조회기간을 넓히거나, 통계자료 페이지를 열 때)
+        // 그때그때 getCompletedRange로 추가 요청해서 masterData에 채워 넣음.
+        // loadedCompletedRangeStart: 현재까지 "납품일자 기준으로 빠짐없이 로딩된" 가장 오래된 날짜.
+        let loadedCompletedRangeStart = null;
+        const RECENT_COMPLETED_MONTHS = 6; // 서버(Code.gs)의 RECENT_COMPLETED_MONTHS와 반드시 동일해야 함
+
+        function defaultCompletedCoverageStart() {
+            const d = new Date(CURRENT_SYSTEM_DATE);
+            d.setMonth(d.getMonth() - RECENT_COMPLETED_MONTHS);
+            return formatLocalDate(d);
+        }
+
+        // neededStartDateStr까지의 거래완료 데이터가 이미 로딩되어 있는지 확인하고,
+        // 부족하면 그 구간만 서버에 추가로 요청해서 masterData에 병합함.
+        async function ensureCompletedDataUntil(neededStartDateStr) {
+            if (!neededStartDateStr) return;
+            if (loadedCompletedRangeStart && neededStartDateStr >= loadedCompletedRangeStart) return; // 이미 커버됨
+            const rangeEnd = loadedCompletedRangeStart || formatLocalDate(new Date(CURRENT_SYSTEM_DATE));
+            const res = await apiPost("getCompletedRange", { startDate: neededStartDateStr, endDate: rangeEnd });
+            if (res && Array.isArray(res.items)) {
+                res.items.forEach(fetched => {
+                    const idx = masterData.findIndex(m => m.code === fetched.code);
+                    if (idx === -1) masterData.push(fetched);
+                    else masterData[idx] = fetched;
+                });
+            }
+            loadedCompletedRangeStart = neededStartDateStr;
+        }
         // 계정 목록(이름-비밀번호)은 더 이상 로그인 시 통째로 내려받지 않음.
         // 로그인은 서버에서 검증하고, 이 객체는 "사용자 관리" 페이지를 열 때만 그때그때 채워짐.
         const MD_ACCOUNTS = {};
@@ -1035,6 +1066,7 @@
             try {
                 const data = await apiFetchAll();
                 if (Array.isArray(data.masterData)) masterData = data.masterData;
+                loadedCompletedRangeStart = defaultCompletedCoverageStart(); // 서버가 최근 6개월치 거래완료만 내려주므로 그에 맞춰 초기화
                 if (Array.isArray(data.activityLog)) {
                     activityLog = data.activityLog.map(log => ({ ...log, time: new Date(log.time) }));
                     pruneActivityLog();
@@ -1226,6 +1258,7 @@
             try {
                 const data = await apiFetchAll(true); // light: 폴링 시에는 활동로그는 생략하고 상담 데이터만 가볍게 받아옴
                 if (Array.isArray(data.masterData)) masterData = data.masterData;
+                loadedCompletedRangeStart = defaultCompletedCoverageStart(); // 서버 응답이 통째로 교체되므로, 추가로 넓혀뒀던 구간도 함께 초기화됨
                 saveToStorage();
                 calculateWorkflowStats();
 
@@ -1422,7 +1455,7 @@
                 renderUnprocessedTable();
             } else if (page === 'stats') {
                 document.getElementById('page-title').innerText = "대시보드";
-                renderStatsPage();
+                loadStatsPageData();
             } else if (page === 'users') {
                 document.getElementById('page-title').innerText = "사용자 관리";
                 loadUsersForAdmin();
@@ -1604,6 +1637,21 @@
             renderPaginationControls('management-pagination', filtered.length, managementPage, 'goToManagementPage');
         }
 
+        // 거래완료 내역 조회기간 필터(문의일자 또는 납품일자)가 바뀔 때 호출됨.
+        // 필터 시작일이 현재 로딩된 범위보다 과거면, 그 구간만 서버에서 추가로 받아온 뒤 화면을 다시 그림.
+        async function onCompletedDateFilterChange() {
+            const fSdate = document.getElementById('filter-comp-sdate').value;
+            const fDelivSdate = document.getElementById('filter-comp-delivery-sdate').value;
+            // 문의일자로 필터링해도, 그 항목의 납품일자는 항상 문의일자 이후이므로
+            // 문의일자 시작값을 납품일자 기준 조회 시작값으로 함께 사용하면 빠짐없이 커버됨
+            const candidates = [fSdate, fDelivSdate].filter(Boolean);
+            if (candidates.length > 0) {
+                const earliest = candidates.reduce((a, b) => (a < b ? a : b));
+                await ensureCompletedDataUntil(earliest);
+            }
+            renderCompletedTable();
+        }
+
         function renderCompletedTable() {
             const tbody = document.getElementById('completed-tbody');
             if(!tbody) return; tbody.innerHTML = "";
@@ -1702,8 +1750,27 @@
 
         // 거래완료 내역 통계자료
         let chartInstances = {};
+        let cachedOldYearsSummary = null; // { fetchedForYear, years: [{year,count,amount}, ...] } - 세션 동안 재사용
 
-        function renderStatsPage() {
+        // 통계자료 페이지 진입 시 호출됨: 최근 2개년치 원본 데이터를 필요하면 추가로 불러오고,
+        // 오래된 4개년치는 서버에 미리 계산되어 있는 요약값을 가져와 화면을 그림.
+        async function loadStatsPageData() {
+            const thisYear = CURRENT_SYSTEM_DATE.getFullYear();
+
+            // 최근 2개년(작년 1월 1일 ~ 오늘) 원본 데이터 확보 (12개월 표, 최근 2개년 차트에 필요)
+            await ensureCompletedDataUntil(`${thisYear - 1}-01-01`);
+
+            // 오래된 4개년 요약은 연도가 바뀌지 않는 한 값이 변하지 않으므로, 세션 동안 한 번만 받아오면 충분함
+            if (!cachedOldYearsSummary || cachedOldYearsSummary.fetchedForYear !== thisYear) {
+                const res = await apiPost("getYearlySummary", {});
+                cachedOldYearsSummary = { fetchedForYear: thisYear, years: (res && Array.isArray(res.years)) ? res.years : [] };
+            }
+
+            renderStatsPage(cachedOldYearsSummary.years);
+        }
+
+        function renderStatsPage(oldYearsSummary) {
+            oldYearsSummary = oldYearsSummary || (cachedOldYearsSummary ? cachedOldYearsSummary.years : []);
             const now = CURRENT_SYSTEM_DATE;
             const allCompleted = masterData.filter(item => item.status === '거래완료');
 
@@ -1726,19 +1793,18 @@
             });
 
             // 연도별 통계: 이번년도 포함 최근 6년 (납품일자(거래완료) 기준으로 거래건수/거래금액 집계)
+            // - 최근 2개년(작년~올해)은 방금 불러온 원본 데이터로 직접 집계
+            // - 그보다 오래된 4개년은 서버에 미리 계산되어 저장된 요약값을 그대로 사용 (매번 전체를 다시 읽지 않기 위함)
             // 데이터가 아예 없는 연도는 목록에서 제외 (예: 아직 입력 안 된 과거 연도)
             const thisYear = now.getFullYear();
-            const yearList = [];
-            for (let i = 5; i >= 0; i--) yearList.push(thisYear - i);
-            const yearStats = yearList
-                .map(year => {
-                    const items = allCompleted.filter(i => i.deliveryDate && new Date(i.deliveryDate).getFullYear() === year);
-                    return {
-                        label: `${year}년`,
-                        amount: items.reduce((s, i) => s + (Number(i.price) || 0), 0),
-                        count: items.length
-                    };
-                })
+            const recentYearList = [thisYear - 1, thisYear];
+            const recentYearStats = recentYearList.map(year => {
+                const items = allCompleted.filter(i => i.deliveryDate && new Date(i.deliveryDate).getFullYear() === year);
+                return { label: `${year}년`, amount: items.reduce((s, i) => s + (Number(i.price) || 0), 0), count: items.length };
+            });
+            const oldYearStats = (oldYearsSummary || []).map(y => ({ label: `${y.year}년`, amount: Number(y.amount) || 0, count: Number(y.count) || 0 }));
+            const yearStats = [...oldYearStats, ...recentYearStats]
+                .sort((a, b) => a.label.localeCompare(b.label))
                 .filter(s => s.count > 0);
 
             renderComboChart('chart-recent-combo', recentStats.map(s => s.label), [
